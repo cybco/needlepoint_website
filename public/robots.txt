@@ -1,0 +1,22 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin and user areas
+Disallow: /admin/
+Disallow: /user/
+Disallow: /api/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /cart
+Disallow: /checkout
+Disallow: /payment
+Disallow: /p/
+
+# Allow search engines to index product and category pages
+Allow: /product/
+Allow: /category/
+Allow: /search
+
+# Sitemap location
+Sitemap: https://pinkcloverusa.com/sitemap.xml

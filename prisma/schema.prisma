@@ -1,0 +1,252 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../node_modules/.prisma/client"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  userId            String   @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime
+  User              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Cart {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?  @db.Uuid
+  sessionCartId   String
+  items           Json[]   @default([]) @db.Json
+  itemsPrice      Decimal  @db.Decimal(12, 2)
+  totalPrice      Decimal  @db.Decimal(12, 2)
+  shippingPrice   Decimal  @db.Decimal(12, 2)
+  taxPrice        Decimal  @db.Decimal(12, 2)
+  shippingAddress Json?    @db.Json
+  createdAt       DateTime @default(now()) @db.Timestamp(6)
+  User            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionCartId])
+  @@index([userId])
+}
+
+model Category {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String            @unique
+  displayName     String
+  slug            String            @unique
+  description     String?
+  image           String?
+  parentId        String?           @db.Uuid
+  sortOrder       Int               @default(0)
+  isActive        Boolean           @default(true)
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  Category        Category?         @relation("CategoryToCategory", fields: [parentId], references: [id])
+  other_Category  Category[]        @relation("CategoryToCategory")
+  ProductCategory ProductCategory[]
+}
+
+model Order {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String      @db.Uuid
+  shippingAddress Json        @db.Json
+  paymentMethod   String
+  paymentResult   Json?       @db.Json
+  itemsPrice      Decimal     @db.Decimal(12, 2)
+  shippingPrice   Decimal     @db.Decimal(12, 2)
+  taxPrice        Decimal     @db.Decimal(12, 2)
+  totalPrice      Decimal     @db.Decimal(12, 2)
+  isPaid          Boolean     @default(false)
+  paidAt          DateTime?   @db.Timestamp(6)
+  isDelivered     Boolean     @default(false)
+  deliveredAt     DateTime?   @db.Timestamp(6)
+  createdAt       DateTime    @default(now()) @db.Timestamp(6)
+  User            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  OrderItem       OrderItem[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([isPaid])
+}
+
+model OrderItem {
+  orderId   String  @db.Uuid
+  productId String  @db.Uuid
+  qty       Int
+  price     Decimal @db.Decimal(12, 2)
+  name      String
+  slug      String
+  image     String
+  Order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  Product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([orderId, productId], map: "orderitems_orderId_productId_pk")
+}
+
+model Product {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  slug            String            @unique(map: "product_slug_idx")
+  images          String[]
+  brand           String
+  description     String
+  stock           Int
+  price           Decimal           @default(0) @db.Decimal(12, 2)
+  rating          Decimal           @default(0) @db.Decimal(3, 2)
+  numReviews      Int               @default(0)
+  isFeatured      Boolean           @default(false)
+  banner          String?
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String[]
+  createdAt       DateTime          @default(now()) @db.Timestamp(6)
+  isPublished     Boolean           @default(true)
+  isPrivate       Boolean           @default(false)
+  privateSlug     String?           @unique(map: "product_private_slug_idx")
+  OrderItem       OrderItem[]
+  ProductCategory ProductCategory[]
+  Review          Review[]
+
+  @@index([isPublished])
+  @@index([isPrivate])
+  @@index([isFeatured])
+  @@index([createdAt])
+}
+
+model ProductCategory {
+  productId  String   @db.Uuid
+  categoryId String   @db.Uuid
+  isPrimary  Boolean  @default(false)
+  Category   Category @relation(fields: [categoryId], references: [id])
+  Product    Product  @relation(fields: [productId], references: [id])
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@index([productId])
+}
+
+model Review {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @db.Uuid
+  productId          String   @db.Uuid
+  title              String
+  description        String
+  isVerifiedPurchase Boolean  @default(false)
+  createdAt          DateTime @default(now()) @db.Timestamp(6)
+  rating             Int
+  Product            Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  User               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName                   String    @default("NO_NAME") @map("name")
+  email                       String    @unique
+  emailVerified               DateTime?
+  image                       String?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime
+  password                    String?
+  paymentMethod               String?
+  role                        String    @default("user")
+  State                       String?
+  city                        String?
+  lastName                    String?
+  phone                       String?
+  streetAddressHouseNumStreet String?
+  streetAddressLine2          String?
+  zip                         String?
+  resetToken                  String?
+  resetTokenExpires           DateTime?
+  isActive                    Boolean   @default(true)
+  Account                     Account[]
+  Cart                        Cart[]
+  Order                       Order[]
+  Review                      Review[]
+  Session                     Session[]
+  VisitorSession              VisitorSession[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model VisitorSession {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionCartId  String     @unique
+  ipHash         String
+  userAgent      String?
+  country        String?
+  region         String?
+  city           String?
+  referrer       String?
+  referrerDomain String?
+  userId         String?    @db.Uuid
+  firstSeenAt    DateTime   @default(now()) @db.Timestamp(6)
+  lastSeenAt     DateTime   @default(now()) @db.Timestamp(6)
+  pageViewCount  Int        @default(0)
+  User           User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  PageView       PageView[]
+
+  @@index([ipHash])
+  @@index([firstSeenAt])
+  @@index([lastSeenAt])
+  @@index([userId])
+  @@index([country])
+  @@index([referrerDomain])
+}
+
+model PageView {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitorSessionId String         @db.Uuid
+  pathname         String
+  searchParams     String?
+  timestamp        DateTime       @default(now()) @db.Timestamp(6)
+  VisitorSession   VisitorSession @relation(fields: [visitorSessionId], references: [id], onDelete: Cascade)
+
+  @@index([visitorSessionId])
+  @@index([pathname])
+  @@index([timestamp])
+}
+
+model SiteSettings {
+  id             String   @id @default("default")
+  reviewsEnabled Boolean  @default(true)
+  brandEnabled   Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}

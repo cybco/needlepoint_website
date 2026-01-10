@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_9DJb3UvGLfFy@ep-curly-mud-ad832sv0-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma db push:*)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_9DJb3UvGLfFy@ep-curly-mud-ad832sv0-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require\" npx prisma generate:*)",
+      "Bash(echo:*)",
+      "Bash(npx prisma db execute:*)",
+      "Bash(npx tsc:*)",
+      "Bash(ls:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

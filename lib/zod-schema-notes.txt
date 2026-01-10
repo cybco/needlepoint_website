@@ -1,0 +1,13 @@
+1.create validator in lib/validators.ts
+2. create types in types/index.ts 
+    bring in type
+3. import 
+import z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+4. use to build form
+ const form = useForm<z.infer<typeof updateProfileSchema>>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      name: session?.user?.name ?? "",
+      email: session?.user?.email ?? "",
+    },

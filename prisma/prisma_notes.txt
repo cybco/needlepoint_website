@@ -1,0 +1,55 @@
+To update database 
+
+  npx prisma generate  // regenerate client
+  npx prisma migrate dev --name introspected_change
+
+
+
+To reset schema or failed migration from db without loosing data
+delete migration files
+
+delete records from neon db in _prisma_migrations
+
+Baselining a database
+To create a baseline migration:
+
+If you have a prisma/migrations folder, delete, move, rename, or archive this folder.
+
+Run the following command to create a migrations directory inside with your preferred name. This example will use 0_init for the migration name:
+
+mkdir -p prisma/migrations/0_init
+
+info
+Then 0_ is important because Prisma Migrate applies migrations in a lexicographic order. You can use a different value such as the current timestamp.
+
+Generate a migration and save it to a file using prisma migrate diff
+
+npx prisma migrate diff \
+--from-empty \
+--to-schema-datamodel prisma/schema.prisma \
+--script > prisma/migrations/0_init/migration.sql
+
+Run the prisma migrate resolve command for each migration that should be ignored:
+
+npx prisma migrate resolve --applied 0_init
+
+This command adds the target migration to the _prisma_migrations table and marks it as applied. When you run prisma migrate deploy to apply new migrations, Prisma Migrate:
+
+Skips all migrations marked as 'applied', including the baseline migration
+Applies any new migrations that come after the baseline migration
+
+
+
+///////
+
+npx prisma migrate dev
+
+    Purpose: This command generates and applies a new migration based on your Prisma schema changes. It creates migration files that keep a history of changes.
+    Use Case: Use this when you want to maintain a record of database changes, which is essential for production environments or when working in teams. It allows for version control of your database schema.
+    Benefits: This command also includes checks for applying migrations in a controlled manner, ensuring data integrity.
+
+npx prisma db push
+
+    Purpose: This command is used to push your current Prisma schema to the database directly. It applies any changes you've made to your schema without creating migration files.
+    Use Case: It’s particularly useful during the development phase when you want to quickly sync your database schema with your Prisma schema without worrying about migration history.
+    Caution: It can overwrite data if your schema changes affect existing tables or columns, so it’s best for early-stage development or prototyping.
