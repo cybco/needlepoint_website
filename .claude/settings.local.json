@@ -14,7 +14,9 @@
       "Bash(npx tsc:*)",
       "Bash(ls:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Fork from pinkcloverusa\n\nStarting point for needlepoint_website project.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(npx prisma db push:*)"
     ],
     "deny": [],
     "ask": []
