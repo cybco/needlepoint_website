@@ -196,6 +196,7 @@ model User {
   Review                      Review[]
   Session                     Session[]
   VisitorSession              VisitorSession[]
+  License                     License[]
 }
 
 model VerificationToken {
@@ -249,4 +250,105 @@ model SiteSettings {
   reviewsEnabled Boolean  @default(true)
   brandEnabled   Boolean  @default(true)
   updatedAt      DateTime @updatedAt
+}
+
+// ===========================================
+// LICENSE SYSTEM MODELS
+// ===========================================
+
+enum LicenseType {
+  PERPETUAL
+  SUBSCRIPTION
+}
+
+enum LicenseSource {
+  STRIPE
+  APPLE
+  MICROSOFT
+  MANUAL
+}
+
+model License {
+  id            String    @id @default(cuid())
+  licenseKey    String    @unique @map("license_key")
+  email         String
+  customerName  String?   @map("customer_name")
+  purchaseDate  DateTime  @default(now()) @map("purchase_date")
+  updatesExpire DateTime  @map("updates_expire")
+  maxDevices    Int       @default(3) @map("max_devices")
+  isRevoked     Boolean   @default(false) @map("is_revoked")
+  revokeReason  String?   @map("revoke_reason")
+
+  userId  String? @map("user_id") @db.Uuid
+  orderId String? @map("order_id") @db.Uuid
+  user    User?   @relation(fields: [userId], references: [id])
+
+  licenseType LicenseType   @default(PERPETUAL) @map("license_type")
+  source      LicenseSource @default(STRIPE)
+  paymentId   String?       @map("payment_id")
+
+  isRefunded   Boolean   @default(false) @map("is_refunded")
+  refundedAt   DateTime? @map("refunded_at")
+  refundReason String?   @map("refund_reason")
+
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  devices DeviceActivation[]
+
+  @@index([email])
+  @@index([userId])
+  @@map("licenses")
+}
+
+model DeviceActivation {
+  id             String    @id @default(cuid())
+  licenseId      String    @map("license_id")
+  deviceId       String    @map("device_id")
+  deviceName     String?   @map("device_name")
+  platform       String?
+  appVersion     String?   @map("app_version")
+  firstActivated DateTime  @default(now()) @map("first_activated")
+  lastValidated  DateTime  @default(now()) @map("last_validated")
+  isActive       Boolean   @default(true) @map("is_active")
+  deactivatedAt  DateTime? @map("deactivated_at")
+
+  license License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, deviceId])
+  @@index([deviceId])
+  @@map("device_activations")
+}
+
+model Trial {
+  id                   String   @id @default(cuid())
+  deviceId             String   @unique @map("device_id")
+  startedAt            DateTime @default(now()) @map("started_at")
+  expiresAt            DateTime @map("expires_at")
+  convertedToLicenseId String?  @map("converted_to_license_id")
+  ipAddress            String?  @map("ip_address")
+  appVersion           String?  @map("app_version")
+  platform             String?
+
+  @@map("trials")
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  eventType  String   @map("event_type")
+  result     String
+  licenseId  String?  @map("license_id")
+  deviceId   String?  @map("device_id")
+  platform   String?
+  appVersion String?  @map("app_version")
+  ipAddress  String?  @map("ip_address")
+  country    String?
+  errorCode  String?  @map("error_code")
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([eventType, createdAt])
+  @@index([licenseId])
+  @@map("analytics_events")
 }
