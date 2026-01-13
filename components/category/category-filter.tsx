@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,25 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [filteredCategories, setFilteredCategories] = useState(categories);
 
+  const filterCategories = useCallback((cats: Category[], term: string): Category[] => {
+    return cats.reduce((acc: Category[], cat) => {
+      const matchesSearch =
+        cat.name.toLowerCase().includes(term) ||
+        cat.displayName.toLowerCase().includes(term);
+
+      const filteredChildren = cat.children ? filterCategories(cat.children, term) : [];
+
+      if (matchesSearch || filteredChildren.length > 0) {
+        acc.push({
+          ...cat,
+          children: filteredChildren,
+        });
+      }
+
+      return acc;
+    }, []);
+  }, []);
+
   useEffect(() => {
     if (searchTerm) {
       const filtered = filterCategories(categories, searchTerm.toLowerCase());
@@ -50,26 +69,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     } else {
       setFilteredCategories(categories);
     }
-  }, [searchTerm, categories]);
-
-  const filterCategories = (cats: Category[], term: string): Category[] => {
-    return cats.reduce((acc: Category[], cat) => {
-      const matchesSearch = 
-        cat.name.toLowerCase().includes(term) ||
-        cat.displayName.toLowerCase().includes(term);
-      
-      const filteredChildren = cat.children ? filterCategories(cat.children, term) : [];
-      
-      if (matchesSearch || filteredChildren.length > 0) {
-        acc.push({
-          ...cat,
-          children: filteredChildren,
-        });
-      }
-      
-      return acc;
-    }, []);
-  };
+  }, [searchTerm, categories, filterCategories]);
 
   const handleCategoryToggle = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
