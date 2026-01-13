@@ -5,6 +5,7 @@ import ProductCarousel from "@/components/shared/product/product-carousel";
 import ViewAllProductsButton from "@/components/view-all-products-button";
 import IconBoxes from "@/components/ui/icon-boxes";
 import DealCountdown from "@/components/deal-countdown";
+import SoftwareCTA from "@/components/software-cta";
 
 // Revalidate homepage every 5 minutes
 export const revalidate = 300;
@@ -19,6 +20,7 @@ const Homepage = async () => {
   return (
     <>
       {featuredProducts.length > 0 && <ProductCarousel data={featuredProducts} />}
+      <SoftwareCTA />
       <ProductList
         data={latestProducts}
         title="Newest Arrivals"
