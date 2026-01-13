@@ -205,9 +205,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Activate the device
-    await prisma.deviceActivation.create({
-      data: {
+    // Activate the device (upsert handles reactivation of previously deactivated devices)
+    await prisma.deviceActivation.upsert({
+      where: {
+        licenseId_deviceId: {
+          licenseId: license.id,
+          deviceId: device_id,
+        },
+      },
+      update: {
+        deviceName: device_name,
+        platform,
+        appVersion: app_version,
+        lastValidated: new Date(),
+        isActive: true,
+        deactivatedAt: null,
+      },
+      create: {
         licenseId: license.id,
         deviceId: device_id,
         deviceName: device_name,
