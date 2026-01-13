@@ -175,16 +175,20 @@ export async function POST(request: NextRequest) {
       ipAddress: clientIp,
     });
 
-    // Determine license status
-    const now = new Date();
-    const updatesExpired = license.updatesExpire < now;
-    const status = updatesExpired ? 'licensed_updates_expired' : 'licensed';
+    // Determine license status based on major version
+    // Parse app major version (e.g., "1.2.3" -> 1)
+    const appMajorVersion = app_version ? parseInt(app_version.split('.')[0], 10) : null;
+    const licensedVersion = license.purchasedMajorVersion;
+
+    // Check if app version is covered by the license
+    const versionCovered = appMajorVersion !== null && appMajorVersion <= licensedVersion;
+    const status = versionCovered ? 'licensed' : 'licensed_upgrade_required';
 
     // Prepare response
     const responseData = {
       valid: true,
       status,
-      updates_expire: license.updatesExpire.toISOString(),
+      licensed_version: licensedVersion,
       devices_used: license.devices.length,
       devices_max: license.maxDevices,
     };

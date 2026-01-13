@@ -158,9 +158,9 @@ export async function POST(request: NextRequest) {
 
       const responseData = {
         license_key: license.licenseKey,
+        licensed_version: license.purchasedMajorVersion,
         devices_used: license.devices.length,
         devices_max: license.maxDevices,
-        updates_expire: license.updatesExpire.toISOString(),
       };
 
       const signature = await signResponse(responseData);
@@ -254,9 +254,9 @@ export async function POST(request: NextRequest) {
     // Prepare response
     const responseData = {
       license_key: license.licenseKey,
+      licensed_version: license.purchasedMajorVersion,
       devices_used: license.devices.length + 1,
       devices_max: license.maxDevices,
-      updates_expire: license.updatesExpire.toISOString(),
     };
 
     const signature = await signResponse(responseData);

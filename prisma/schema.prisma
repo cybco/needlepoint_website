@@ -269,15 +269,16 @@ enum LicenseSource {
 }
 
 model License {
-  id            String    @id @default(cuid())
-  licenseKey    String    @unique @map("license_key")
-  email         String
-  customerName  String?   @map("customer_name")
-  purchaseDate  DateTime  @default(now()) @map("purchase_date")
-  updatesExpire DateTime  @map("updates_expire")
-  maxDevices    Int       @default(3) @map("max_devices")
-  isRevoked     Boolean   @default(false) @map("is_revoked")
-  revokeReason  String?   @map("revoke_reason")
+  id                    String    @id @default(cuid())
+  licenseKey            String    @unique @map("license_key")
+  email                 String
+  customerName          String?   @map("customer_name")
+  purchaseDate          DateTime  @default(now()) @map("purchase_date")
+  purchasedMajorVersion Int       @default(1) @map("purchased_major_version")
+  updatesExpire         DateTime  @map("updates_expire") // Deprecated: kept for backwards compatibility
+  maxDevices            Int       @default(3) @map("max_devices")
+  isRevoked             Boolean   @default(false) @map("is_revoked")
+  revokeReason          String?   @map("revoke_reason")
 
   userId  String? @map("user_id") @db.Uuid
   orderId String? @map("order_id") @db.Uuid

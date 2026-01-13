@@ -45,7 +45,7 @@ export default async function PurchaseSoftwarePage() {
                 <CheckIcon /> Perpetual license (buy once, own forever)
               </li>
               <li className="flex items-center gap-2">
-                <CheckIcon /> 1 year of free updates
+                <CheckIcon /> All v1.x updates included
               </li>
               <li className="flex items-center gap-2">
                 <CheckIcon /> Up to 3 device activations

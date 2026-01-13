@@ -64,3 +64,6 @@ export const reviewFormDefualtValues = {
 
 export const SENDER_EMAIL = process.env.SENDER_EMAIL;
 export const BREVO_API_KEY = process.env.BREVO_API_KEY;
+
+// Software licensing
+export const SOFTWARE_MAJOR_VERSION = 1; // Current major version being sold (v1.x.x)

@@ -3,6 +3,7 @@
 import { prisma } from '@/db/prisma';
 import { generateLicenseKey } from '@/lib/license-keys';
 import { logEvent, EventTypes } from '@/lib/license-analytics';
+import { SOFTWARE_MAJOR_VERSION } from '@/lib/constants';
 
 const PAGE_SIZE = 20;
 
@@ -209,7 +210,8 @@ export async function purchaseLicense(params: PurchaseLicenseParams) {
         customerName: customerName || null,
         userId,
         purchaseDate: now,
-        updatesExpire,
+        purchasedMajorVersion: SOFTWARE_MAJOR_VERSION,
+        updatesExpire, // Kept for backwards compatibility
         maxDevices: 3,
         licenseType: 'PERPETUAL',
         source: paymentMethod === 'mock' ? 'MANUAL' : 'STRIPE',
@@ -281,7 +283,8 @@ export async function createManualLicense(params: {
         email,
         customerName: customerName || null,
         purchaseDate: now,
-        updatesExpire,
+        purchasedMajorVersion: SOFTWARE_MAJOR_VERSION,
+        updatesExpire, // Kept for backwards compatibility
         maxDevices: 3,
         licenseType: 'PERPETUAL',
         source: 'MANUAL',
