@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
     // Determine license status based on major version
     // Parse app major version (e.g., "1.2.3" -> 1)
     const appMajorVersion = app_version ? parseInt(app_version.split('.')[0], 10) : null;
-    const licensedVersion = license.purchasedMajorVersion;
+    const licensedVersion = license.purchasedMajorVersion ?? 1;
 
     // Check if app version is covered by the license
     const versionCovered = appMajorVersion !== null && appMajorVersion <= licensedVersion;
