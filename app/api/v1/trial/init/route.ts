@@ -8,7 +8,7 @@ import {
   getHttpStatusForError,
 } from '@/lib/errors';
 import { signResponse } from '@/lib/signing';
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { checkRateLimit, getClientIp, maybeCleanup } from '@/lib/rate-limit';
 import { logTrialStarted, logTrialAlreadyUsed } from '@/lib/license-analytics';
 
 // Request body schema
@@ -113,6 +113,9 @@ export async function POST(request: NextRequest) {
 
     // Sign the response
     const signature = await signResponse(responseData);
+
+    // Probabilistic cleanup of old rate limit entries (non-blocking)
+    maybeCleanup();
 
     return NextResponse.json(successResponse(responseData, signature), {
       status: 200,

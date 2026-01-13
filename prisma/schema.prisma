@@ -352,3 +352,13 @@ model AnalyticsEvent {
   @@index([licenseId])
   @@map("analytics_events")
 }
+
+model RateLimitEntry {
+  id         String   @id @default(cuid())
+  key        String   // Format: "type:identifier" (e.g., "trialInit:192.168.1.1")
+  timestamp  DateTime @default(now())
+
+  @@index([key, timestamp])
+  @@index([timestamp]) // For cleanup queries
+  @@map("rate_limit_entries")
+}

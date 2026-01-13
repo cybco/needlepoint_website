@@ -26,6 +26,10 @@ const links = [
     href: "/admin/users",
   },
   {
+    title: "Licensing",
+    href: "/admin/licensing",
+  },
+  {
     title: "Settings",
     href: "/admin/settings",
   },

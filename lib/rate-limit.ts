@@ -1,57 +1,29 @@
-// Upstash rate limiting for license API endpoints
-import { Ratelimit } from '@upstash/ratelimit';
-import { Redis } from '@upstash/redis';
+// PostgreSQL-based rate limiting for license API endpoints
+import { prisma } from '@/db/prisma';
 
-// Initialize Redis client
-// These environment variables should be set in production
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_URL!,
-  token: process.env.UPSTASH_REDIS_TOKEN!,
-});
-
-// Rate limits by endpoint
-export const rateLimits = {
+// Rate limit configurations
+const rateLimitConfigs = {
   // Trial init: 5 per hour per IP (prevent abuse)
-  trialInit: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(5, '1 h'),
-    prefix: 'rl:trial',
-  }),
+  trialInit: { limit: 5, windowMs: 60 * 60 * 1000 }, // 1 hour
 
   // Activation: 10 per hour per license key
-  activate: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(10, '1 h'),
-    prefix: 'rl:activate',
-  }),
+  activate: { limit: 10, windowMs: 60 * 60 * 1000 }, // 1 hour
 
   // Validation: 60 per hour per device (normal app usage)
-  validate: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(60, '1 h'),
-    prefix: 'rl:validate',
-  }),
+  validate: { limit: 60, windowMs: 60 * 60 * 1000 }, // 1 hour
 
   // Recovery: 3 per hour per email (prevent spam)
-  recover: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(3, '1 h'),
-    prefix: 'rl:recover',
-  }),
+  recover: { limit: 3, windowMs: 60 * 60 * 1000 }, // 1 hour
 
   // IAP verification: 20 per hour per device
-  iapVerify: new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(20, '1 h'),
-    prefix: 'rl:iap',
-  }),
-};
+  iapVerify: { limit: 20, windowMs: 60 * 60 * 1000 }, // 1 hour
+} as const;
 
-export type RateLimitType = keyof typeof rateLimits;
+export type RateLimitType = keyof typeof rateLimitConfigs;
 
 /**
- * Check rate limit for a specific endpoint and identifier.
- * Returns { success: true } if under limit, { success: false, reset } if rate limited.
+ * Check rate limit for a specific endpoint and identifier using PostgreSQL.
+ * Uses a sliding window approach.
  */
 export async function checkRateLimit(
   type: RateLimitType,
@@ -62,15 +34,68 @@ export async function checkRateLimit(
   remaining: number;
   reset: number;
 }> {
-  const ratelimit = rateLimits[type];
-  const result = await ratelimit.limit(identifier);
+  const config = rateLimitConfigs[type];
+  const key = `${type}:${identifier}`;
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - config.windowMs);
+
+  // Count requests in the current window
+  const count = await prisma.rateLimitEntry.count({
+    where: {
+      key,
+      timestamp: { gte: windowStart },
+    },
+  });
+
+  const remaining = Math.max(0, config.limit - count);
+  const success = count < config.limit;
+
+  // If under limit, record this request
+  if (success) {
+    await prisma.rateLimitEntry.create({
+      data: { key, timestamp: now },
+    });
+  }
+
+  // Calculate reset time (end of current window)
+  const reset = Math.ceil((windowStart.getTime() + config.windowMs) / 1000);
 
   return {
-    success: result.success,
-    limit: result.limit,
-    remaining: result.remaining,
-    reset: result.reset,
+    success,
+    limit: config.limit,
+    remaining: success ? remaining - 1 : 0,
+    reset,
   };
+}
+
+/**
+ * Clean up expired rate limit entries.
+ * Call this periodically (e.g., via cron job or after each request with low probability).
+ */
+export async function cleanupExpiredEntries(): Promise<number> {
+  // Delete entries older than the longest window (1 hour)
+  const cutoff = new Date(Date.now() - 60 * 60 * 1000);
+
+  const result = await prisma.rateLimitEntry.deleteMany({
+    where: {
+      timestamp: { lt: cutoff },
+    },
+  });
+
+  return result.count;
+}
+
+/**
+ * Probabilistic cleanup - runs cleanup with 1% chance on each call.
+ * This keeps the table small without needing a separate cron job.
+ */
+export async function maybeCleanup(): Promise<void> {
+  if (Math.random() < 0.01) {
+    // 1% chance
+    await cleanupExpiredEntries().catch((err) => {
+      console.error('Rate limit cleanup error:', err);
+    });
+  }
 }
 
 /**
