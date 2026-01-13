@@ -157,6 +157,7 @@ export async function POST(request: NextRequest) {
       });
 
       const responseData = {
+        license_key: license.licenseKey,
         devices_used: license.devices.length,
         devices_max: license.maxDevices,
         updates_expire: license.updatesExpire.toISOString(),
@@ -252,6 +253,7 @@ export async function POST(request: NextRequest) {
 
     // Prepare response
     const responseData = {
+      license_key: license.licenseKey,
       devices_used: license.devices.length + 1,
       devices_max: license.maxDevices,
       updates_expire: license.updatesExpire.toISOString(),
