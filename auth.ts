@@ -43,6 +43,7 @@ export const config = {
               name: user.firstName,
               email: user.email,
               role: user.role,
+              emailVerified: user.emailVerified,
             };
           }
         }
@@ -57,6 +58,7 @@ export const config = {
       session.user.id = token.sub;
       session.user.role = token.role;
       session.user.name = token.name;
+      session.user.emailVerified = token.emailVerified;
 
       // if there is an update, set the user name
       if (trigger === "update") {
@@ -69,6 +71,7 @@ export const config = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.emailVerified = user.emailVerified;
         // if user has no firstName then use email
         if (user.name == "NO_NAME") {
           token.name = user.email!.split("@")[0];

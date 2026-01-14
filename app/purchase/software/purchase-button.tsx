@@ -9,9 +9,10 @@ interface PurchaseButtonProps {
   email: string;
   price: number;
   userId: string;
+  disabled?: boolean;
 }
 
-export default function PurchaseButton({ email, price, userId }: PurchaseButtonProps) {
+export default function PurchaseButton({ email, price, userId, disabled }: PurchaseButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -46,7 +47,7 @@ export default function PurchaseButton({ email, price, userId }: PurchaseButtonP
       className="w-full text-lg py-6"
       size="lg"
       onClick={handlePurchase}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
     >
       {isLoading ? (
         <>

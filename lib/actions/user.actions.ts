@@ -16,6 +16,8 @@ import { prisma } from "@/db/prisma";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
 import { redirect } from "next/navigation";
+import { sendEmailVerification } from "@/lib/email";
+import crypto from "crypto";
 
 import { PAGE_SIZE } from "../constants";
 import { revalidatePath } from "next/cache";
@@ -74,12 +76,32 @@ export async function signUpUser(prevState: unknown, formData: FormData) {
     });
     const plainPassword = user.password;
     user.password = hashSync(user.password, 10);
+
+    // Create user without email verification
     await prisma.user.create({
       data: {
         email: user.email,
         password: user.password,
         updatedAt: new Date(),
       },
+    });
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store verification token
+    await prisma.verificationToken.create({
+      data: {
+        identifier: user.email,
+        token: verificationToken,
+        expires,
+      },
+    });
+
+    // Send verification email (don't block on failure)
+    sendEmailVerification(user.email, verificationToken).catch((err) => {
+      console.error("Failed to send verification email:", err);
     });
 
     await signIn("credentials", {
@@ -415,5 +437,50 @@ export async function changeEmail(data: {
     };
   } catch (error) {
     return { success: false, message: formatError(error) };
+  }
+}
+
+// Resend verification email
+export async function resendVerificationEmail(email: string) {
+  try {
+    // Check if user exists
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+    });
+
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    // Check if already verified
+    if (user.emailVerified) {
+      return { success: false, message: "Email is already verified" };
+    }
+
+    // Delete any existing verification tokens for this user
+    await prisma.verificationToken.deleteMany({
+      where: { identifier: email },
+    });
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store new verification token
+    await prisma.verificationToken.create({
+      data: {
+        identifier: email,
+        token: verificationToken,
+        expires,
+      },
+    });
+
+    // Send verification email
+    await sendEmailVerification(email, verificationToken);
+
+    return { success: true, message: "Verification email sent. Please check your inbox." };
+  } catch (error) {
+    console.error("Failed to resend verification email:", error);
+    return { success: false, message: "Failed to send verification email. Please try again." };
   }
 }

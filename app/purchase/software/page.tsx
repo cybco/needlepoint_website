@@ -3,7 +3,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import PurchaseButton from "./purchase-button";
+import ResendVerificationButton from "./resend-verification-button";
 
 export const metadata: Metadata = {
   title: "Purchase NeedlePoint Designer",
@@ -19,6 +22,8 @@ export default async function PurchaseSoftwarePage() {
     redirect("/sign-in?callbackUrl=/purchase/software");
   }
 
+  const isEmailVerified = !!session.user.emailVerified;
+
   return (
     <div className="container max-w-2xl mx-auto py-12 px-4">
       <Card className="w-full">
@@ -33,6 +38,19 @@ export default async function PurchaseSoftwarePage() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {!isEmailVerified && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Email verification required</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p>Please verify your email address before making a purchase. Check your inbox for a verification link.</p>
+                <div className="mt-3">
+                  <ResendVerificationButton email={session.user.email!} />
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="text-center">
             <span className="text-5xl font-bold">${SOFTWARE_PRICE}</span>
             <span className="text-muted-foreground ml-2">USD</span>
@@ -77,6 +95,7 @@ export default async function PurchaseSoftwarePage() {
             email={session.user.email!}
             price={SOFTWARE_PRICE}
             userId={session.user.id!}
+            disabled={!isEmailVerified}
           />
         </CardFooter>
       </Card>

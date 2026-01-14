@@ -311,6 +311,20 @@ export async function purchaseLicense(params: PurchaseLicenseParams) {
   try {
     const { email, userId, amount, paymentMethod, customerName } = params;
 
+    // Verify user's email is confirmed before allowing purchase
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { emailVerified: true },
+    });
+
+    if (!user?.emailVerified) {
+      return {
+        success: false,
+        message: 'Please verify your email address before making a purchase.',
+        licenseKey: null,
+      };
+    }
+
     // Mock payment processing
     // In production, this would verify Stripe payment intent or webhook
     if (paymentMethod === 'mock') {

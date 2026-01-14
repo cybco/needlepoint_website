@@ -89,6 +89,48 @@ export const sendTemplateEmail = async (
   );
 };
 
+export const sendEmailVerification = async (email: string, verificationToken: string) => {
+  const verifyUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+
+  const htmlContent = `
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
+      <h2 style="color: #333; text-align: center;">Verify Your Email Address</h2>
+      <p>Hello,</p>
+      <p>Thank you for creating an account with ${APP_NAME}. Please verify your email address by clicking the button below:</p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${verifyUrl}" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
+      </div>
+      <p>This link will expire in 24 hours.</p>
+      <p>If you didn't create an account, please ignore this email.</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #666; font-size: 12px; text-align: center;">
+        This email was sent by ${APP_NAME}. If you're having trouble clicking the button, copy and paste this URL into your browser: ${verifyUrl}
+      </p>
+    </div>
+  `;
+
+  const textContent = `
+    Verify Your Email Address
+
+    Thank you for creating an account with ${APP_NAME}.
+
+    Click this link to verify your email: ${verifyUrl}
+
+    This link will expire in 24 hours.
+
+    If you didn't create an account, please ignore this email.
+  `;
+
+  return sendWithRetry(() =>
+    getBrevoService().sendHtmlEmail(
+      [{ email, name: email.split('@')[0] }],
+      `Verify Your Email - ${APP_NAME}`,
+      htmlContent,
+      textContent
+    )
+  );
+};
+
 export const sendPasswordResetEmail = async (email: string, resetToken: string) => {
   const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password/confirm?token=${resetToken}`;
   

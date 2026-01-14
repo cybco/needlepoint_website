@@ -60,13 +60,13 @@ const CredentialsSignInForm = () => {
         <div className="text-center text-destructive mt-6">{data.message}</div>
       )}
       <div className="text-center mt-4">
-        <Link href="/reset-password" className="text-sm text-muted-foreground hover:text-primary">
-          Forgot your password?
+        <Link href="/reset-password" className="text-sm font-bold text-muted-foreground hover:text-primary">
+          Forgot Password
         </Link>
       </div>
       <div className="text-center mt-6">
-        <Link href="/sign-up" target="_self" className="text-sm text-muted-foreground hover:text-primary">
-          Don&apos;t have an account? Sign Up
+        <Link href="/sign-up" target="_self" className="text-sm font-bold text-muted-foreground hover:text-primary">
+          Create Account
         </Link>
       </div>
     </form>

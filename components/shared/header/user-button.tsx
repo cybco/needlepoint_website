@@ -3,24 +3,19 @@ import { auth } from "@/auth";
 import { signOutUser } from "@/lib/actions/user.actions";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { UserIcon, User, ShoppingBag, Settings, LogOut } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut } from "lucide-react";
 
 const UserButton = async () => {
   const session = await auth();
   if (!session?.user) {
     return (
-      <div className="flex gap-2">
-        <Button asChild variant="ghost">
-          <Link href="/reset-password" className="text-sm">
-            Forgot Password
-          </Link>
-        </Button>
-        <Button asChild>
-          <Link href="/sign-in">
-            <UserIcon />
-            Sign In
-          </Link>
-        </Button>
+      <div className="flex gap-4 items-center">
+        <Link href="/reset-password" className="text-sm hover:underline">
+          Forgot Password
+        </Link>
+        <Link href="/sign-in" className="text-sm font-medium hover:underline">
+          LOG IN
+        </Link>
       </div>
     );
   }
