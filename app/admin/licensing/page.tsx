@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getAllLicenses, getLicenseStats } from "@/lib/actions/licensing.actions";
+import { getLicensesGroupedByEmail, getLicenseStats } from "@/lib/actions/licensing.actions";
 import { requireAdmin } from "@/lib/auth-guard";
 import {
   Table,
@@ -37,7 +37,7 @@ const AdminLicensingPage = async (props: {
   const { page = "1", query: searchText } = await props.searchParams;
 
   const [licensesResult, statsResult] = await Promise.all([
-    getAllLicenses({ page: Number(page), query: searchText }),
+    getLicensesGroupedByEmail({ page: Number(page), query: searchText }),
     getLicenseStats(),
   ]);
 
@@ -118,9 +118,9 @@ const AdminLicensingPage = async (props: {
           <TableHeader>
             <TableRow>
               <TableHead>EMAIL</TableHead>
-              <TableHead>LICENSE KEY</TableHead>
+              <TableHead className="text-center">LICENSES</TableHead>
               <TableHead>SOURCE</TableHead>
-              <TableHead className="text-center">TOTAL</TableHead>
+              <TableHead className="text-center">AVAILABLE</TableHead>
               <TableHead className="text-center">WIN</TableHead>
               <TableHead className="text-center">MAC</TableHead>
               <TableHead className="text-center">IPAD</TableHead>
@@ -137,15 +137,19 @@ const AdminLicensingPage = async (props: {
               </TableRow>
             ) : (
               licensesResult.data.map((license) => (
-                <TableRow key={license.id}>
+                <TableRow key={license.email}>
                   <TableCell className="font-medium">{license.email}</TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {maskLicenseKey(license.licenseKey)}
-                  </TableCell>
+                  <TableCell className="text-center">{license.licenseCount}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{license.source}</Badge>
+                    {license.sources.map((source) => (
+                      <Badge key={source} variant="outline" className="mr-1">
+                        {source}
+                      </Badge>
+                    ))}
                   </TableCell>
-                  <TableCell className="text-center">{license.totalInstalls}</TableCell>
+                  <TableCell className="text-center">
+                    {license.totalInstalls} / {license.maxDevices}
+                  </TableCell>
                   <TableCell className="text-center">{license.windowsInstalls}</TableCell>
                   <TableCell className="text-center">{license.macosInstalls}</TableCell>
                   <TableCell className="text-center">{license.iosInstalls}</TableCell>
@@ -155,10 +159,12 @@ const AdminLicensingPage = async (props: {
                       : "-"}
                   </TableCell>
                   <TableCell>
-                    {license.isRevoked ? (
-                      <Badge variant="destructive">Revoked</Badge>
-                    ) : (
+                    {license.someRevoked && !license.allActive ? (
+                      <Badge variant="secondary">Partial</Badge>
+                    ) : license.allActive ? (
                       <Badge variant="default">Active</Badge>
+                    ) : (
+                      <Badge variant="destructive">Revoked</Badge>
                     )}
                   </TableCell>
                 </TableRow>

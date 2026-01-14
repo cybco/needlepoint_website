@@ -23,6 +23,22 @@ export interface LicenseWithDeviceCounts {
   lastInstalled: Date | null;
 }
 
+export interface LicensesByEmail {
+  email: string;
+  customerName: string | null;
+  licenseCount: number;
+  licenseKeys: string[];
+  sources: string[];
+  maxDevices: number;
+  totalInstalls: number;
+  windowsInstalls: number;
+  macosInstalls: number;
+  iosInstalls: number;
+  lastInstalled: Date | null;
+  allActive: boolean;
+  someRevoked: boolean;
+}
+
 export async function getAllLicenses({
   page = 1,
   query,
@@ -98,6 +114,124 @@ export async function getAllLicenses({
     };
   } catch (error) {
     console.error('Error fetching licenses:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch licenses',
+      data: null,
+    };
+  }
+}
+
+export async function getLicensesGroupedByEmail({
+  page = 1,
+  query,
+}: {
+  page?: number;
+  query?: string;
+}) {
+  try {
+    const whereClause = query
+      ? {
+          OR: [
+            { email: { contains: query, mode: 'insensitive' as const } },
+            { licenseKey: { contains: query, mode: 'insensitive' as const } },
+            { customerName: { contains: query, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    // Get all licenses with their device activations (no pagination yet, we'll paginate after grouping)
+    const licenses = await prisma.license.findMany({
+      where: whereClause,
+      include: {
+        devices: {
+          where: { isActive: true },
+        },
+      },
+      orderBy: { purchaseDate: 'desc' },
+    });
+
+    // Group licenses by email
+    const emailMap = new Map<string, LicensesByEmail>();
+
+    licenses.forEach((license) => {
+      const devices = license.devices;
+      const windowsInstalls = devices.filter((d) => d.platform === 'windows').length;
+      const macosInstalls = devices.filter((d) => d.platform === 'macos').length;
+      const iosInstalls = devices.filter((d) => d.platform === 'ios').length;
+
+      const lastInstalled = devices.length > 0
+        ? devices.reduce((latest, d) =>
+            d.lastValidated > latest ? d.lastValidated : latest,
+            devices[0].lastValidated
+          )
+        : null;
+
+      const existing = emailMap.get(license.email);
+
+      if (existing) {
+        // Aggregate with existing entry
+        existing.licenseCount++;
+        existing.licenseKeys.push(license.licenseKey);
+        if (!existing.sources.includes(license.source)) {
+          existing.sources.push(license.source);
+        }
+        existing.maxDevices += license.maxDevices;
+        existing.totalInstalls += devices.length;
+        existing.windowsInstalls += windowsInstalls;
+        existing.macosInstalls += macosInstalls;
+        existing.iosInstalls += iosInstalls;
+        if (lastInstalled && (!existing.lastInstalled || lastInstalled > existing.lastInstalled)) {
+          existing.lastInstalled = lastInstalled;
+        }
+        if (license.isRevoked) {
+          existing.allActive = false;
+          existing.someRevoked = true;
+        }
+        if (!license.isRevoked && !existing.allActive) {
+          existing.allActive = false; // Keep as is if already false
+        }
+      } else {
+        // Create new entry
+        emailMap.set(license.email, {
+          email: license.email,
+          customerName: license.customerName,
+          licenseCount: 1,
+          licenseKeys: [license.licenseKey],
+          sources: [license.source],
+          maxDevices: license.maxDevices,
+          totalInstalls: devices.length,
+          windowsInstalls,
+          macosInstalls,
+          iosInstalls,
+          lastInstalled,
+          allActive: !license.isRevoked,
+          someRevoked: license.isRevoked,
+        });
+      }
+    });
+
+    // Convert to array and sort by most recent activity
+    const groupedLicenses = Array.from(emailMap.values()).sort((a, b) => {
+      if (!a.lastInstalled && !b.lastInstalled) return 0;
+      if (!a.lastInstalled) return 1;
+      if (!b.lastInstalled) return -1;
+      return b.lastInstalled.getTime() - a.lastInstalled.getTime();
+    });
+
+    // Apply pagination
+    const totalCount = groupedLicenses.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const paginatedLicenses = groupedLicenses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    return {
+      success: true,
+      data: paginatedLicenses,
+      totalPages,
+      totalCount,
+    };
+  } catch (error) {
+    console.error('Error fetching grouped licenses:', error);
     return {
       success: false,
       message: 'Failed to fetch licenses',
