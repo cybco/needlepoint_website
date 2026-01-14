@@ -20,12 +20,6 @@ export const metadata: Metadata = {
   title: "Admin | Licensing",
 };
 
-function maskLicenseKey(key: string): string {
-  const parts = key.split('-');
-  if (parts.length !== 5) return key;
-  return `${parts[0]}-****-****-****-${parts[4]}`;
-}
-
 const AdminLicensingPage = async (props: {
   searchParams: Promise<{
     page: string;
